@@ -1,0 +1,546 @@
+root
+Pa$$w0rd
+
+passwd
+
+/etc/hostname
+1 Способ:
+
+nano /etc/hostname
+
+CTRL+X Выход с сохранением
+CTRL+O Сохранение
+
+reboot
+
+2 Способ:
+echo R-FW > /etc/hostname
+reboot
+
+
+3 Способ для CentOS:
+vi /etc/hostname
+A - Режим редактирования
+R-FW
+ESC - Выйти из режима редактирование
+:wq
+
+reboot
+
+
+Установка пакетов
+
+Debian:
+
+apt-cdrom add
+
+apt -y install tcpdump net-tools vim lynx bind9* nfs* cifs* nmap
+
+CLient:
+WSR
+Pa$$w0rd
+
+terminal 
+
+su - Переход в привилегированный режим
+
+
+CentOS:
+1 Способ:
+
+cd - Change Directory - Перейти в нужную директорию
+ls -la - list 
+
+# vi /etc/yum.repos.s/CentOS-Media.repo
+
+[c7-media]
+
+# mkdir /media/cdrom
+blkid или lsblk для просмотра устройств хранения инф. 
+
+# mount /dev/sr0 /media/cdrom - для монтирования диска
+
+# yum --disablerepo=\* --enablerepo=c7-media -y install tcpdump net-tools vim lynx bind* nfs* cifs* nano nmap
+
+
+
+
+apt -y
+ls -lahc
+yum --help / yum -h
+
+2 Способ:
+
+# cd /etc/yum.repos.d/
+
+# mv $(ls | grep -v Media) ../
+
+# vi CentOS-Media.repo
+A
+[
+enabled=1
+]
+ESC
+:wq
+
+
+# mount /dev/sr0 /media/cdrom
+
+# yum -y install ...
+
+
+rm - Remove - удалить
+
+yum list | grep [пакет] - Сортировка уже установленных пакетов
+
+
+Hosts:
+
+/etc/hosts
+
+nano /etc/hosts
+172.16.20.10 L-SRV L-SRV.skill39.wsr Server.skill39.wsr center.skill39.wsr server center
+
+172.16.20.1  L-FW L-FW.skill39.wsr VPN VPN.skill39.wsr
+172.16.50.1  L-FW L-FW.skill39.wsr VPN VPN.skill39.wsr
+172.16.55.1  L-FW L-FW.skill39.wsr VPN VPN.skill39.wsr
+
+172.16.200.61 l-cli-b.skill39.wsr l-cli-b
+
+172.16.100.1 l-rtr-a.skill39.wsr l-rtr-a
+1.1.1.1 l-rtr-a.skill39.wsr l-rtr-a
+172.16.50.2 l-rtr-a.skill39.wsr l-rtr-a
+
+172.16.200.1 l-rtr-b.skill39.wsr l-rtr-b
+172.16.55.2 l-rtr-b.skill39.wsr l-rtr-b
+2.2.2.2 l-rtr-b.skill39.wsr l-rtr-b
+
+192.168.20.1 r-fw.skill39.wsr r-fw 
+192.168.10.1 r-fw.skill39.wsr r-fw
+
+172.16.20.10 r-srv r-srv.skill39.wsr
+
+192.168.10.2 r-rtr.skill39.wsr r-rtr
+192.168.100.1 r-rtr.skill39.wsr r-rtr
+
+192.168.100.100 r-cli r-cli.skill39.wsr
+Приоритет DNS:
+
+nano /etc/nsswitch.conf
+
+hosts: dns files
+dns - DNS Должен быть по любому вначале строки
+
+
+IP:
+Debian:
+
+ip a
+
+# nano /etc/network/interfaces
+
+auto ens192
+iface ens192 inet static
+	address 172.16.20.10/24
+	gateway 172.16.20.1 - Ставиться если линк идет в сторону интеренета
+
+
+systemctl [start | stop | restart | enable | disable]
+
+# systemctl restart networking
+# systemctl status networking
+
+
+CentOS:
+1 Способ:
+# nmtui
+
+2 Способ:
+nmcli
+
+# nmcli connection edit ens192
+# set ipv4.addresses 192.168.20.10/24
+yes
+# set ipv4.gateway 192.168.20.1
+# set connection.autoconnect yes
+# save
+yes
+# quit
+
+
+DHCP:
+
+L-RTR-A:
+
+# apt -y install isc-dhcp-server
+# nano /etc/dhcp/dhcpd.conf
+ddns-update-style none;
+subnet 172.16.100.0 netmask 255.255.255.0 {
+    range 172.16.100.60 172.16.100.75;
+    option domain-name-servers 172.16.20.10;
+    option domain-name "skill39.wsr";
+    option routers 172.16.100.1;
+    option broadcast-address 172.16.100.255;
+    default-lease-time 600;
+    max-lease-time 7200;
+}
+
+CTRL-X Y ENTER
+# ip a
+Ищем интерфейс в этой сети
+
+# nano /etc/default/isc-dhcp-server
+INTERFACESv4="ens192"
+CTRL-X Y ENTER
+
+systemctl restart isc-dhcp-server
+systemctl status isc-dhcp-server
+systemctl enable isc-dhcp-server
+
+
+L-RTR-B:
+
+# apt -y install isc-dhcp-server
+# nano /etc/dhcp/dhcpd.conf
+ddns-update-style none;
+subnet 172.16.200.0 netmask 255.255.255.0 {
+    range 172.16.200.60 172.16.200.75;
+    option domain-name-servers 172.16.20.10;
+    option domain-name "skill39.wsr";
+    option routers 172.16.200.1;
+    option broadcast-address 172.16.200.255;
+    default-lease-time 600;
+    max-lease-time 7200;
+}
+
+host L-CLi-B {
+    hardware ethernet <MAC ADDRESS L-CLI-B>;
+    fixed-address 172.16.200.61;
+}
+
+CTRL-X Y ENTER
+# ip a
+Ищем интерфейс в этой сети
+
+# nano /etc/default/isc-dhcp-server
+INTERFACESv4="ens224"
+CTRL-X Y ENTER
+
+systemctl restart isc-dhcp-server
+systemctl status isc-dhcp-server
+systemctl enable isc-dhcp-server
+
+
+
+День 2:
+yum list | grep ...
+apt list | grep bind9 либо что вам нужно найти
+
+
+
+#########################################################################
+
+DNS:
+# apt install bind9
+# mkdir /opt/dns/
+# nano /etc/bind/named.conf.default-zones
+[
+# Прямая зона
+zone "skill39.wsr" {
+	type master;
+	file "/opt/dns/wsr";
+};
+
+# Обратная зона
+zone "16.172.in-addr.arpa" {
+	type master;
+	file "/opt/dns/ptr";
+};
+]
+
+# nano /etc/bind/named.conf.options
+[
+# Раскоментируем строчки
+forwarders {
+	10.10.10.10; - Здесь ставим ip адреc ISP
+};
+dnssec-validation no; - Ставим no, вместо yes
+]
+
+# cp /etc/bind/db.empty /opt/dns/wsr
+# cp /etc/bind/db.empty /opt/dns/ptr
+# cd /opt/dns
+
+# Прямая зона
+
+# nano /opt/dns/wsr
+
+@	IN	SOA	skill39.wsr. l-srv.skill39.wsr. (
+			2	;Serial
+)
+@	IN	NS	L-SRV.
+@	IN	A	172.16.20.10
+L-SRV	IN	A	172.16.20.10
+
+L-FW	IN	A	172.16.20.1
+L-FW	IN	A	172.16.55.1
+L-FW	IN	A	172.16.50.1
+
+L-RTR-A	IN	A	172.16.100.1
+L-RTR-A	IN	A	172.16.50.2
+
+L-RTR-B	IN	A	172.16.200.1
+L-RTR-B	IN	A	172.16.55.2
+
+L-CLI-B	IN	A	172.16.200.61
+
+SERVER	IN	CNAME	L-SRV
+CENTER	IN	CNAME	L-SRV
+VPN	IN	CNAME	L-FW
+
+
+# Проверка конфиига и файла зон
+
+# named-checkconf /etc/bind/named.conf
+# named-checkzone skill39.wsr wsr
+
+
+
+
+# Обратная зона
+
+# nano /opt/dns/ptr
+@	IN	SOA	16.172.in-addr.arpa. 10.20.16.172.in-addr.arpa. (
+			2	;Serial
+)
+@	IN	NS	L-SRV.
+@	IN	A	172.16.20.10
+10.20	IN	PTR	L-SRV
+61.200	IN	PTR	L-CLI-B
+
+
+# named-checkzone 16.172.in-addr.arpa ptr
+# systemctl restart bind9
+# systemctl status bind9
+# systemctl enable bind9
+
+# nano /etc/resolv.conf
+[
+nameserver 172.16.20.10
+search skill39.wsr
+
+]
+
+
+#########################################################################
+
+L-FW:
+NAT:
+
+==============
+iptables     =
+firewalld    = Фаерволы
+selinux      =
+==============
+
+4) a
+
+
+# nano /etc/iptables.sh
+{
+#!/bin/bash
+iptables -F
+iptables -t nat -F
+
+iptables -t nat -A POSTROUTING -o ens256 -j MASQUERADE
+iptables -A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+}
+
+# chmod +x /etc/iptables.sh
+# nano /etc/rc.local
+{
+#!/bin/bash
+/etc/iptables.sh
+}
+
+# chmod +x /etc/rc.local
+
+
+#########################################################################
+
+L-FW DNS Forward:
+
+4) b, c
+
+
+# apt install bind9
+# nano /etc/bind/named.conf.options
+[
+# Раскоментируем строчки
+forwarders {
+	172.16.20.10; - Здесь ставим ip адреc L-SRV
+};
+dnssec-validation no; - Ставим no, вместо yes
+]
+
+# nano /etc/bind/named.conf.default-zones
+zone "skill39.wsr" {
+	type master;
+	file "/opt/dns/wsr";
+};
+
+# nano /opt/dns/wsr
+
+@	IN	SOA	skill39.wsr. l-fw.skill39.wsr. (
+			2	;Serial
+)
+@	IN	NS	L-SRV.
+@	IN	A	172.16.20.10
+L-FW	IN	A	10.10.10.1
+R-FW	IN	A	20.20.20.100
+
+WWW	IN	CNAME	R-FW
+VPN	IN	CNAME	L-FW
+
+
+# systemctl restart bind9
+# systemctl status bind9
+# systemctl enable bind9
+#########################################################################
+
+Forwarding:
+L-FW, L-RTR-A, L-RTR-B, R-FW, R-RTR
+
+sysctl -a | grep ipv4 | grep forward
+
+# nano /etc/sysctl.conf
+net.ipv4.ip_forward=1
+
+# sysctl -p
+
+
+
+
+#########################################################################
+
+5 Quagga - Делаем статические маршруты вместо динамической маршрутизации
+
+Static Routing:
+L-FW:
+# nano /etc/rc.local
+{
+ip route add 172.16.100.0/24 via 172.16.50.2
+ip r add 172.16.200.0/24 via 172.16.55.2
+
+
+}
+R-FW:
+# nano /etc/rc.local
+{
+ip r add 192.168.100.0/24 via 192.168.10.2
+
+
+}
+
+#########################################################################
+
+GRE:
+L-FW
+# nano /etc/rc.local
+{
+ip tunnel add TUNNEL01 mode gre remote 20.20.20.100 local 10.10.10.1
+ip a add 10.5.5.1/30 dev TUNNEL01
+ip link set TUNNEL01 up
+
+}
+R-FW
+# nano /etc/rc.local
+{
+ip tunnel add TUNNEL01 mode gre remote 10.10.10.1 local 20.20.20.100
+ip a add 10.5.5.2/30 dev TUNNEL01
+ip link set TUNNEL01 up
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

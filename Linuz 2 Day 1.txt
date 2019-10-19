@@ -1,0 +1,319 @@
+root
+Pa$$w0rd
+
+passwd
+
+/etc/hostname
+1 Способ:
+
+nano /etc/hostname
+
+CTRL+X Выход с сохранением
+CTRL+O Сохранение
+
+reboot
+
+2 Способ:
+echo R-FW > /etc/hostname
+reboot
+
+
+3 Способ для CentOS:
+vi /etc/hostname
+A - Режим редактирования
+R-FW
+ESC - Выйти из режима редактирование
+:wq
+
+reboot
+
+
+Установка пакетов
+
+Debian:
+
+apt-cdrom add
+
+apt -y install tcpdump net-tools vim lynx bind9* nfs* cifs* nmap
+
+CLient:
+WSR
+Pa$$w0rd
+
+terminal 
+
+su - Переход в привилегированный режим
+
+
+CentOS:
+1 Способ:
+
+cd - Change Directory - Перейти в нужную директорию
+ls -la - list 
+
+# vi /etc/yum.repos.s/CentOS-Media.repo
+
+[c7-media]
+
+# mkdir /media/cdrom
+blkid или lsblk для просмотра устройств хранения инф. 
+
+# mount /dev/sr0 /media/cdrom - для монтирования диска
+
+# yum --disablerepo=\* --enablerepo=c7-media -y install tcpdump net-tools vim lynx bind* nfs* cifs* nano nmap
+
+
+
+
+apt -y
+ls -lahc
+yum --help / yum -h
+
+2 Способ:
+
+# cd /etc/yum.repos.d/
+
+# mv $(ls | grep -v Media) ../
+
+# vi CentOS-Media.repo
+A
+[
+enabled=1
+]
+ESC
+:wq
+
+
+# mount /dev/sr0 /media/cdrom
+
+# yum -y install ...
+
+
+rm - Remove - удалить
+
+yum list | grep [пакет] - Сортировка уже установленных пакетов
+
+
+Hosts:
+
+/etc/hosts
+
+nano /etc/hosts
+172.16.20.10 L-SRV L-SRV.skill39.wsr Server.skill39.wsr center.skill39.wsr server center
+
+172.16.20.1  L-FW L-FW.skill39.wsr VPN VPN.skill39.wsr
+172.16.50.1  L-FW L-FW.skill39.wsr VPN VPN.skill39.wsr
+172.16.55.1  L-FW L-FW.skill39.wsr VPN VPN.skill39.wsr
+
+172.16.200.61 l-cli-b.skill39.wsr l-cli-b
+
+172.16.100.1 l-rtr-a.skill39.wsr l-rtr-a
+1.1.1.1 l-rtr-a.skill39.wsr l-rtr-a
+172.16.50.2 l-rtr-a.skill39.wsr l-rtr-a
+
+172.16.200.1 l-rtr-b.skill39.wsr l-rtr-b
+172.16.55.2 l-rtr-b.skill39.wsr l-rtr-b
+2.2.2.2 l-rtr-b.skill39.wsr l-rtr-b
+
+192.168.20.1 r-fw.skill39.wsr r-fw 
+192.168.10.1 r-fw.skill39.wsr r-fw
+
+172.16.20.10 r-srv r-srv.skill39.wsr
+
+192.168.10.2 r-rtr.skill39.wsr r-rtr
+192.168.100.1 r-rtr.skill39.wsr r-rtr
+
+192.168.100.100 r-cli r-cli.skill39.wsr
+Приоритет DNS:
+
+nano /etc/nsswitch.conf
+
+hosts: dns files
+dns - DNS Должен быть по любому вначале строки
+
+
+IP:
+Debian:
+
+ip a
+
+# nano /etc/network/interfaces
+
+auto ens192
+iface ens192 inet static
+	address 172.16.20.10/24
+	gateway 172.16.20.1 - Ставиться если линк идет в сторону интеренета
+
+
+systemctl [start | stop | restart | enable | disable]
+
+# systemctl restart networking
+# systemctl status networking
+
+
+CentOS:
+1 Способ:
+# nmtui
+
+2 Способ:
+nmcli
+
+# nmcli connection edit ens192
+# set ipv4.addresses 192.168.20.10/24
+yes
+# set ipv4.gateway 192.168.20.1
+# set connection.autoconnect yes
+# save
+yes
+# quit
+
+
+DHCP:
+
+L-RTR-A:
+
+# apt -y install isc-dhcp-server
+# nano /etc/dhcp/dhcpd.conf
+ddns-update-style none;
+subnet 172.16.100.0 netmask 255.255.255.0 {
+    range 172.16.100.60 172.16.100.75;
+    option domain-name-servers 172.16.20.10;
+    option domain-name "skill39.wsr";
+    option routers 172.16.100.1;
+    option broadcast-address 172.16.100.255;
+    default-lease-time 600;
+    max-lease-time 7200;
+}
+
+CTRL-X Y ENTER
+# ip a
+Ищем интерфейс в этой сети
+
+# nano /etc/default/isc-dhcp-server
+INTERFACESv4="ens192"
+CTRL-X Y ENTER
+
+systemctl restart isc-dhcp-server
+systemctl status isc-dhcp-server
+systemctl enable isc-dhcp-server
+
+
+L-RTR-B:
+
+# apt -y install isc-dhcp-server
+# nano /etc/dhcp/dhcpd.conf
+ddns-update-style none;
+subnet 172.16.200.0 netmask 255.255.255.0 {
+    range 172.16.200.60 172.16.200.75;
+    option domain-name-servers 172.16.20.10;
+    option domain-name "skill39.wsr";
+    option routers 172.16.200.1;
+    option broadcast-address 172.16.200.255;
+    default-lease-time 600;
+    max-lease-time 7200;
+}
+
+host L-CLi-B {
+    hardware ethernet <MAC ADDRESS L-CLI-B>;
+    fixed-address 172.16.200.61;
+}
+
+CTRL-X Y ENTER
+# ip a
+Ищем интерфейс в этой сети
+
+# nano /etc/default/isc-dhcp-server
+INTERFACESv4="ens224"
+CTRL-X Y ENTER
+
+systemctl restart isc-dhcp-server
+systemctl status isc-dhcp-server
+systemctl enable isc-dhcp-server
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,189 @@
+1 : Hostname
+
+Text editors
+vim /etc/hostname
+nano /etc/hostname
+mcedit /etc/hostname
+
+echo L-FW > /etc/hostname
+reboot
+
+2 : Packages
+
+DEBIAN:
+
+Indexing cdrom
+apt-cdrom add
+
+
+apt install -y tcpdump net-tools vim lynx bind9utils nfs* cifs*
+apt-get install tcpdump net-tools vim lynx bind9utils nfs* cifs*
+
+CENTOS:
+
+/etc/yum.repos.d/
+
+mkdir /media/cdrom
+
+Check disks
+blkid
+lsblk
+
+/dev/sr0
+
+Mounting cd drive to folder
+mount /dev/sr0 /media/cdrom
+
+1:
+yum -y --disablerepo=\* --enablerepo=c7-media install [name]
+
+2:
+cd /etc/yum.repos.d/
+
+Move repo files
+mv $(ls | grep -v Media) ../
+
+Enable CentOS-Media.repo
+vi CentOS-Media.repo
+    enabled=1
+
+
+yum -y install net-tools vim lynx bind* nfs* cifs*
+
+
+3 : HOSTS
+
+/etc/hosts
+   [ip-address] [domain-name]
+
+/etc/nsswitch.conf
+  hosts:   dns files
+
+
+4 : IP
+
+DEBIAN:
+/etc/network/interfaces
+
+auto [int]
+iface [int] inet [static/dhcp]
+	address [ip address]/[prefix]
+	gateway [ip gateway]
+
+systemctl restart networking
+
+CENTOS:
+
+nmcli connection edit [int]
+nmcli> set ipv4.addresses [ipaddr/24]
+nmcli> set ipv4.gateway [gateway ip]
+nmcli> set ipv4.dns [ip address]
+nmcli> set connection.autoconnect yes
+nmcli> save
+nmcli> quit
+
+nmtui
+
+
+DHCP:
+
+DEBIAN:
+
+apt install -y isc-dhcp-server
+nano /etc/dhcp/dhcpd.conf
+
+L-RTR-A:
+subnet 172.16.100.0 netmask 255.255.255.0 {
+	range 172.16.100.60 172.16.100.75;
+	option domain-name-servers 172.16.20.10;
+	option domain-name "skill39.wsr";
+	option routers 172.16.100.1;
+	option broadcast-address 172.16.100.255;
+}
+
+L-RTR-B:
+subnet 172.16.200.0 netmask 255.255.255.0 {
+	range 172.16.200.60 172.16.200.75;
+	option domain-name-servers 172.16.20.10;
+	option domain-name "skill39.wsr";
+	option routers 172.16.200.1;
+	option broadcast-address 172.16.200.255;
+}
+
+host L-CLI-B {
+	hardware ethernet [mac address];
+	fixed-address 172.16.200.61;
+}
+
+systemctl restart isc-dhcp-server
+systemctl enable isc-dhcp-server
+
+CENTOS:
+
+yum -y install dhcpd
+nano /etc/dhcp/dhcpd.conf
+
+subnet [net-address] netmask [netmask]{
+
+}
+
+DNS:
+
+DEBIAN:
+
+apt install bind9*
+
+/etc/bind/named.conf
+/etc/bind/named.conf.default-zones
+/etc/bind/named.conf.options
+/etc/bind/named.conf.local
+
+mkdir /opt/dns
+
+cp /etc/bind/db.empty /opt/dns/wsr
+cp /etc/bind/db.empty /opt/dns/ptr
+
+CENTOS:
+
+yum -y install bind*
+
+/etc/named.conf
+
+mkdir /opt/dns
+cp /var/named/db.empty /opt/dns/wsr
+cp /var/named/db.empty /opt/dns/ptr
+
+
+/etc/resolv.conf
+nameserver 172.16.20.10
+search skill39.wsr
+
+ROUTING:
+
+nano /etc/sysctl.conf
+Раскоментировать #net.ipv4.ip_forward=1
+
+sysctl -p
+
+L-FW:
+nano /etc/rc.local
+
+ip r add 172.16.100.0/24 via 172.16.50.2
+ip r add 172.16.200.0/24 via 172.16.55.2
+
+ip tunnel add TUNNEL01 mode gre remote 20.20.20.100 local 10.10.10.1
+ip a add 10.5.5.1/30 dev TUNNEL01
+ip link set TUNNEL01 up
+ip r add 192.168.0.0/16 via 10.5.5.2
+
+
+R-FW:
+nano /etc/rc.local
+
+ip tunnel add TUNNEL01 mode gre remote 10.10.10.1 local 20.20.20.100
+ip a add 10.5.5.2/30 dev TUNNEL01
+ip link set TUNNEL01 up
+ip r add 172.16.0.0/16 via 10.5.5.1
+
+
+ 
